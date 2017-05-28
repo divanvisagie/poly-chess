@@ -1,0 +1,327 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<dom-module id="polytest-element">
+  <template>
+    <style is="custom-style" type="text/css">
+      :host {
+        display: block;
+        --width: 640px;
+        --tile-size: 64px;
+      }
+
+      .chessboard {
+        width: var(--width);
+        height: var(--width);
+        margin: 20px;
+        border: 25px solid #333;
+      }
+
+      .white {
+        background-color: rgba(255, 255, 255, 0.0);
+      }
+      
+      .black {
+        background-color: #999;
+      }
+
+      .noselect {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;                          
+      }
+
+      .tile{
+        float: left;
+        width: 12.5%;
+        height: 12.5%;        
+        font-size: var(--tile-size);
+        text-align: center;
+        display: table-cell;
+        vertical-align: middle; 
+        cursor: pointer;       
+      }
+
+      .ghost-overlay{
+        text-align: center;
+        font-size: var(--tile-size);
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .hidden{
+        display:none;
+      }
+    </style>  
+
+    <div id="board" class="chessboard noselect">
+
+      <template is='dom-repeat' items='[[board]]'>        
+        <template is='dom-repeat' items='[[item]]'>
+          <div on-up="onMouseUp" on-down="onMouseDown" data-location$="[[item.location]]" data-type$="[[item.contents.typeName]]" class$="tile [[item.colour]]">[[displayPiece(item)]]</div>
+        </template>
+      </template>
+      <div id="hover" class="white hidden ghost-overlay">[[displayHover(_draggedType)]]</div>
+    </div>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'polytest-element',
+      properties: {
+        _initialClick:{
+          type: Object,
+          value: null
+        },
+        _offsetY: {
+          type: Number,
+          value: 0
+        },
+        _offsetX: {
+          type: Number,
+          value: 0
+        },
+        pieceTypes: {
+          type: Object,
+          value: {
+            "WHITE": {
+              "PAWN": "\u2659",
+              "CASTLE": "\u2656",
+              "KNIGHT": "\u2658",
+              "BISHOP": "\u2657",
+              "QUEEN": "\u2655",
+              "KING": "\u2654",
+            },
+            "BLACK": {
+              "PAWN": "\u265F",
+              "CASTLE": "\u265C",
+              "KNIGHT": "\u265E",
+              "BISHOP": "\u265D",
+              "QUEEN": "\u265B",
+              "KING": "\u265A"
+            }          
+          }
+        },
+        _columns: {
+          type: Array,
+          value: ["A", "B", "C", "D", "E", "F", "G", "H"]
+        },
+        _rows: {
+          type: Array,
+          value: [1, 2, 3, 4, 5, 6, 7, 8].reverse()
+        },
+        edgeLength:{
+          type:Number,
+          value: 640
+        },        
+        _standardBoard: {
+          type: Array,
+          value: [
+            {x: 1, y: 0, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 1, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 2, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 3, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 4, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 5, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 6, type: "PAWN", colour: "BLACK"},
+            {x: 1, y: 7, type: "PAWN", colour: "BLACK"},
+            
+            {x: 0, y: 0, type: "CASTLE", colour: "BLACK"},
+            {x: 0, y: 1, type: "KNIGHT", colour: "BLACK"},
+            {x: 0, y: 2, type: "BISHOP", colour: "BLACK"},
+            {x: 0, y: 3, type: "QUEEN", colour: "BLACK"},
+            {x: 0, y: 4, type: "KING", colour: "BLACK"},
+            {x: 0, y: 5, type: "BISHOP", colour: "BLACK"},
+            {x: 0, y: 6, type: "KNIGHT", colour: "BLACK"},
+            {x: 0, y: 7, type: "CASTLE", colour: "BLACK"},
+
+            {x: 6, y: 0, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 1, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 2, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 3, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 4, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 5, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 6, type: "PAWN", colour: "WHITE"},
+            {x: 6, y: 7, type: "PAWN", colour: "WHITE"},
+
+            {x: 7, y: 0, type: "CASTLE", colour: "WHITE"},
+            {x: 7, y: 1, type: "KNIGHT", colour: "WHITE"},
+            {x: 7, y: 2, type: "BISHOP", colour: "WHITE"},
+            {x: 7, y: 3, type: "QUEEN", colour: "WHITE"},
+            {x: 7, y: 4, type: "KING", colour: "WHITE"},
+            {x: 7, y: 5, type: "BISHOP", colour: "WHITE"},
+            {x: 7, y: 6, type: "KNIGHT", colour: "WHITE"},
+            {x: 7, y: 7, type: "CASTLE", colour: "WHITE"},
+          ]
+        }        
+      },
+      ready(){        
+        this._pieces = this._standardBoard.slice(0);
+        var board = this.setupBoard();
+        this.placePieces(board);
+        this.board = board;
+        
+        console.log(this.edgeLength)
+        this.updateStyles({
+          '--width': this.edgeLength + "px",
+          '--tile-size': this.edgeLength / 10 + "px"
+        });
+      },
+      displayPiece(item){
+        if(!item.contents.hidden){
+          return item.contents.type;
+        }        
+        return "";
+      },
+      displayHover (pieceName){        
+        if(typeof(pieceName) === "undefined" || pieceName === ""){
+          return "";
+        }
+        return this.pieceTypes[pieceName.colour][pieceName.type];
+      } ,     
+      placePieces(board){
+        for(var i = 0; i < this._pieces.length; i ++){
+          var item = this._pieces[i];
+          board[item.x][item.y].contents = {
+            type: this.pieceTypes[item.colour][item.type], 
+            typeName: item.type, 
+            color: item.colour,
+            hidden: item.hidden
+          };
+        }
+      },
+      setupBoard(){        
+        return this._rows.map(row => {
+          return this._columns.map(column => {
+            return {
+              location: column + row,
+              colour: (row + this._columns.indexOf(column)) % 2 == 0 ? "white" : "black",
+              contents: {
+                colour: "",
+                type: ""
+              }
+            }
+          })
+        }) 
+      },
+      onMouseDown(event){        
+        this.$.hover.style.display = "block";
+
+        var clientRect = event.target.getBoundingClientRect();
+        var locationString = event.target.dataset.location;
+        
+        var clickedPiece = this.getPieceAt(locationString);
+        clickedPiece.hidden = true;
+        this._draggedType = clickedPiece;
+
+        this.updateBoard();         
+
+        var hoverOverlay = this.$.hover              
+
+        this.setOverlayInitialPosition(hoverOverlay, clientRect);
+
+        //There are no position fields on the event so we null it here
+        // and allow the move handler to lazily populate it
+        this._initialClick = null;
+      },
+      updateBoard(){
+        var board = this.setupBoard();
+        this.placePieces(board);        
+        this.board = board;       
+      },
+      setOverlayInitialPosition(hoverOverlay, clientRect){
+        this._offsetX = clientRect.right - hoverOverlay.style.width - (this.edgeLength * 0.1125);
+        this._offsetY = clientRect.top - hoverOverlay.style.height + window.pageYOffset;                
+        
+        hoverOverlay.style.left = (this._offsetX) + "px";
+        hoverOverlay.style.top = (this._offsetY) + "px";
+      },
+      getPieceAt(locationString){
+        var location = this.stringToLocation(locationString);
+        var x = location[0];
+        var y = location[1];
+        for(var i = 0; i < this._pieces.length; i ++){
+          var piece = this._pieces[i];
+          if(piece.x === x && piece.y === y){
+            return piece;
+          }
+        }        
+      },
+      stringToLocation(locationString){
+        return [          
+          this._rows.indexOf(parseInt(locationString.charAt(1))),
+          this._columns.indexOf(locationString.charAt(0))
+        ];
+      },
+      removePieceAt(locationString){
+        var location = this.stringToLocation(locationString);
+        var x = location[0];
+        var y = location[1];
+        this._pieces = this._pieces.filter(item => {
+          return !(item.x == x && item.y == y);
+        })
+      },
+      acceptMove(originTile, landingTile, type, colour){        
+        return true;
+      },
+      onMouseUp(event){        
+        this.$.hover.style.display = "none";                    
+        var originTile = event.target.dataset.location;
+
+        var clickedPiece = this.getPieceAt(originTile);
+        clickedPiece.hidden = false;
+
+        var landingDiv = Polymer.dom(this.$.board).querySelector(".tile:hover");
+        if(landingDiv != null){
+          landingTile = landingDiv.getAttribute("data-location");
+          this.movePiece(landingTile, originTile); 
+        }
+        this.updateBoard();                 
+      },
+      forceMovePiece(landingTile, originTile){
+        if(landingTile === originTile){
+          return;
+        }
+        piece = this.getPieceAt(originTile);          
+
+        var landingLocation = this.stringToLocation(landingTile);
+
+        this.removePieceAt(landingTile)
+        piece.x = landingLocation[0];
+        piece.y = landingLocation[1];                          
+      },
+      movePiece(landingTile, originTile) {        
+        if(landingTile === originTile){
+          return;
+        }
+        piece = this.getPieceAt(originTile);          
+
+        var landingLocation = this.stringToLocation(landingTile);
+
+        if(this.acceptMove(originTile, landingTile, piece.type, piece.colour)){
+          this.removePieceAt(landingTile)
+          piece.x = landingLocation[0];
+          piece.y = landingLocation[1];        
+        }
+      },
+      attached() {            
+        this.$.board.addEventListener('mousemove', this.onMouseMove.bind(this));  
+      },
+      detached() {        
+        this.$.board.removeEventListener('mousemove', this.onMouseMove);  
+      },
+      onMouseMove(event) {        
+        var hoverOverlay = this.$.hover;
+        if(this._initialClick == null){
+          this._initialClick = event;
+        }        
+        
+        hoverOverlay.style.left = (this._offsetX + event.clientX - this._initialClick.clientX) + "px";        
+        hoverOverlay.style.top = (this._offsetY + event.clientY - this._initialClick.clientY) + "px";
+      }      
+    });
+  </script>
+</dom-module>
