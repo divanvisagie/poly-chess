@@ -1,6 +1,6 @@
 {
-  "name": "polytest-element",
-  "main": "polytest-element.html",
+  "name": "poly-chess",
+  "main": "poly-chess.html",
   "dependencies": {
     "polymer": "Polymer/polymer#^1.4.0"
   },

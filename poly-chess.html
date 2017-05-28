@@ -117,7 +117,7 @@
           type:Number,
           value: 640
         },
-        acceptMove(originTile, landingTile, type, colour){
+        acceptMove: function(originTile, landingTile, type, colour){
           console.log("Checking move")
           return true;
         },
@@ -308,8 +308,11 @@
         }
       },
       attached() {    
-        console.log("HELLOOOO")        
+        console.log("HELLOOOO7")        
         this.$.board.addEventListener('mousemove', this.onMouseMove.bind(this));  
+        if (this.func) {
+          this.callFunc = new Function('return '+ this.func);
+        }
       },
       detached() {        
         this.$.board.removeEventListener('mousemove', this.onMouseMove);  
