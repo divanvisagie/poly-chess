@@ -116,7 +116,11 @@
         edgeLength:{
           type:Number,
           value: 640
-        },        
+        },
+        acceptMove(originTile, landingTile, type, colour){
+          console.log("Checking move")
+          return true;
+        },
         _standardBoard: {
           type: Array,
           value: [
@@ -163,8 +167,7 @@
         var board = this.setupBoard();
         this.placePieces(board);
         this.board = board;
-        
-        console.log(this.edgeLength)
+                
         this.updateStyles({
           '--width': this.edgeLength + "px",
           '--tile-size': this.edgeLength / 10 + "px"
@@ -264,9 +267,6 @@
           return !(item.x == x && item.y == y);
         })
       },
-      acceptMove(originTile, landingTile, type, colour){        
-        return true;
-      },
       onMouseUp(event){        
         this.$.hover.style.display = "none";                    
         var originTile = event.target.dataset.location;
@@ -307,7 +307,8 @@
           piece.y = landingLocation[1];        
         }
       },
-      attached() {            
+      attached() {    
+        console.log("HELLOOOO")        
         this.$.board.addEventListener('mousemove', this.onMouseMove.bind(this));  
       },
       detached() {        
