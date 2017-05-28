@@ -54,10 +54,9 @@
       .hidden{
         display:none;
       }
-    </style>  
-
+    </style>      
     <div id="board" class="chessboard noselect">
-
+      
       <template is='dom-repeat' items='[[board]]'>        
         <template is='dom-repeat' items='[[item]]'>
           <div on-up="onMouseUp" on-down="onMouseDown" data-location$="[[item.location]]" data-type$="[[item.contents.typeName]]" class$="tile [[item.colour]]">[[displayPiece(item)]]</div>
@@ -107,7 +106,7 @@
         },
         _columns: {
           type: Array,
-          value: ["A", "B", "C", "D", "E", "F", "G", "H"]
+          value: ["a", "b", "c", "d", "e", "f", "g", "h"]
         },
         _rows: {
           type: Array,
@@ -116,10 +115,6 @@
         edgeLength:{
           type:Number,
           value: 640
-        },
-        acceptMove: function(originTile, landingTile, type, colour){
-          console.log("Checking move")
-          return true;
         },
         _standardBoard: {
           type: Array,
@@ -166,8 +161,8 @@
         this._pieces = this._standardBoard.slice(0);
         var board = this.setupBoard();
         this.placePieces(board);
-        this.board = board;
-                
+        this.board = board;     
+
         this.updateStyles({
           '--width': this.edgeLength + "px",
           '--tile-size': this.edgeLength / 10 + "px"
@@ -196,6 +191,9 @@
           };
         }
       },
+      acceptMove(originTile, landingTile, type, colour){        
+        return true;
+      },      
       setupBoard(){        
         return this._rows.map(row => {
           return this._columns.map(column => {
@@ -307,12 +305,8 @@
           piece.y = landingLocation[1];        
         }
       },
-      attached() {    
-        console.log("HELLOOOO7")        
-        this.$.board.addEventListener('mousemove', this.onMouseMove.bind(this));  
-        if (this.func) {
-          this.callFunc = new Function('return '+ this.func);
-        }
+      attached() {
+        this.$.board.addEventListener('mousemove', this.onMouseMove.bind(this));          
       },
       detached() {        
         this.$.board.removeEventListener('mousemove', this.onMouseMove);  
